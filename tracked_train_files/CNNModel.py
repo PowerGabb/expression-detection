@@ -26,6 +26,8 @@ from keras.layers import Dense, Dropout, Flatten, Conv2D, BatchNormalization, Ac
 from keras.models import Sequential
 from keras.optimizers import Adam
 from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau
+from sklearn.utils.class_weight import compute_class_weight
+import numpy as np
 
 
 class CNNModel:
@@ -118,6 +120,43 @@ class CNNModel:
             to_file='model.png',
             show_shapes=True,
             show_layer_names=True)
+    
+    def calculate_class_weights(self):
+        """
+        Menghitung class weights berdasarkan distribusi data training
+        untuk mengatasi masalah class imbalance
+        """
+        # Ekstrak label dari generator
+        y_train = []
+        
+        # Reset generator untuk memastikan kita mendapat semua data
+        self.train_data.reset()
+        
+        # Ekstrak label dari filepaths
+        for filepath in self.train_data.filepaths:
+            for class_name, class_index in self.train_data.class_indices.items():
+                if class_name in filepath:
+                    y_train.append(class_index)
+                    break
+        
+        y_train = np.array(y_train)
+        classes = np.array(list(range(len(self.train_data.class_indices))))
+        
+        # Hitung class weights menggunakan sklearn
+        class_weights = compute_class_weight(
+            class_weight='balanced',
+            classes=classes,
+            y=y_train
+        )
+        
+        # Convert ke dictionary
+        class_weight_dict = {i: weight for i, weight in enumerate(class_weights)}
+        
+        print("Class weights calculated:")
+        for class_name, class_index in self.train_data.class_indices.items():
+            print(f"{class_name}: {class_weight_dict[class_index]:.4f}")
+        
+        return class_weight_dict
         self.model.summary()
 
         return Image('model.png', width=400, height=200)
@@ -125,14 +164,14 @@ class CNNModel:
     def compile_model(self):
         """
         Method to compile the CNN model with specified optimiser, loss function, 
-        and metrics.
+        and metrics. Menggunakan class weights untuk mengatasi class imbalance.
 
         Returns:
             History: 
                 The training history containing loss and accuracy values for 
                 each epoch.
         """
-        epochs = 2  # number of epochs to run
+        epochs = 8  # Jumlah epochs yang optimal untuk training
         optimizer = Adam(learning_rate=0.001)  # utilise Adam as the optimiser
         # create a decay for the learning rate to reduce when accuracy does not improve
         decay_rate = ReduceLROnPlateau(monitor='val_loss', factor=0.2,
@@ -150,15 +189,27 @@ class CNNModel:
             save_best_only=True,
             mode='max')
         callbacks_list = [checkpoint, decay_rate]
+        
+        # Hitung class weights untuk mengatasi imbalance
+        print("\nCalculating class weights to handle imbalanced dataset...")
+        class_weights = self.calculate_class_weights()
+        
+        print(f"\nStarting training with {epochs} epochs and balanced class weights...")
+        print(f"Training samples: {self.train_data.n}")
+        print(f"Validation samples: {self.valid_gen.n}")
+        print(f"Classes: {list(self.train_data.class_indices.keys())}")
 
-        # create a history for the model using all metrics
+        # create a history for the model using all metrics dengan class weights
         history = self.model.fit(
             x=self.train_data,
             steps_per_epoch=self.train_data.n // self.train_data.batch_size,
             epochs=epochs,
             validation_data=self.valid_gen,
             validation_steps=self.valid_gen.n // self.valid_gen.batch_size,
-            callbacks=callbacks_list
+            callbacks=callbacks_list,
+            class_weight=class_weights,  # Tambahkan class weights!
+            verbose=1
         )
-
+        
+        print("\nTraining completed! Model weights saved to model_weights.h5")
         return history
