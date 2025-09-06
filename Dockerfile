@@ -7,13 +7,17 @@ WORKDIR /app
 # Install system dependencies including OpenCV requirements
 RUN apt-get update && apt-get install -y \
     python3-venv \
-    libgl1-mesa-glx \
+    libgl1-mesa-dev \
     libglib2.0-0 \
     libsm6 \
     libxext6 \
     libxrender-dev \
     libgomp1 \
     libgthread-2.0-0 \
+    libgtk-3-0 \
+    libavcodec-dev \
+    libavformat-dev \
+    libswscale-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy the entire project first
