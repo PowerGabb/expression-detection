@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  emotion-detection-api:
+    build: .
+    ports:
+      - "5050:5050"
+    environment:
+      - FLASK_ENV=production
+      - PYTHONPATH=/app
+    volumes:
+      # Optional: Mount for development
+      # - ./tracked:/app/tracked
+      # - ./tracked_train_files:/app/tracked_train_files
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5050/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+# Optional: Add a network for better isolation
+networks:
+  default:
+    name: emotion-detection-network

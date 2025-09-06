@@ -3,6 +3,7 @@ venv/
 env/
 .env
 .venv
+tracked_train_files/archive
 
 # Python
 __pycache__/
@@ -43,8 +44,7 @@ Thumbs.db
 *~
 
 # Model files (large files)
-*.h5
-model_weights.h5
+
 
 # Dataset (if large)
 archive/
