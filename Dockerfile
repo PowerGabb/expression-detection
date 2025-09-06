@@ -16,16 +16,13 @@ RUN apt-get update && apt-get install -y \
     python3-venv \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements file
-COPY requirements.txt .
+# Copy the entire project first
+COPY . .
 
 # Create and activate virtual environment, then install dependencies
 RUN python -m venv venv && \
     . venv/bin/activate && \
     pip install --no-cache-dir -r requirements.txt
-
-# Copy the entire project
-COPY . .
 
 # Copy and set permissions for startup script
 COPY start.sh /app/start.sh
