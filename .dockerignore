@@ -5,6 +5,7 @@
 # Documentation
 *.md
 *.txt
+!requirements.txt
 README*
 
 # Python cache
